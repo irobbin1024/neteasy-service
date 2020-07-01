@@ -6,7 +6,6 @@
 //
 
 import Foundation
-import Foundation
 #if canImport(FoundationNetworking)
 import FoundationNetworking
 #endif
@@ -18,15 +17,19 @@ struct Network {
         let signal = DispatchSemaphore(value: 0)
         var result: [String: Any] = [:]
         DispatchQueue.global(qos: .default).async {
-            let request = try? URLRequest(url: URL(string: url)!, method: .get)
-            let task = session.dataTask(with: request!) { (data, response, error) in
-                do {
-                    let json = try? JSONSerialization.jsonObject(with: data!,
-                                                                options:.allowFragments) as! [String: Any]
-                    result = json!
-                 } catch {
-                   print(error)
-                }
+            var urlComponents = URLComponents(string: url)!
+            var queryItemList = [URLQueryItem]()
+            for (key, value) in parameter {
+                let item = URLQueryItem(name: key, value: "\(value)")
+                queryItemList.append(item)
+            }
+            urlComponents.queryItems = queryItemList
+            var request = URLRequest(url: urlComponents.url!)
+            request.httpMethod = "GET"
+            
+            let task = session.dataTask(with: request) { (data, response, error) in
+                let json = try? JSONSerialization.jsonObject(with: data!, options:.allowFragments) as? [String: Any]
+                result = json!
                 signal.signal()
             }
             
